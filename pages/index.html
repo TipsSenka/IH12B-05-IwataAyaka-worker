@@ -1,11 +1,145 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>フロントエンドです</title>
-</head>
-<body>
-    <p>フロントエンドです</p>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cloudflare Worker API Test</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Arial, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 32px;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .card {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 16px;
+      }
+      input, button {
+        font-size: 16px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #64748b;
+      }
+      input {
+        width: 60%;
+        margin-right: 8px;
+      }
+      button {
+        background: #38bdf8;
+        color: #082f49;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin-top: 12px;
+        background: rgba(15, 118, 110, 0.15);
+        border: 1px solid rgba(94, 234, 212, 0.3);
+        border-radius: 8px;
+        padding: 16px;
+      }
+      .status {
+        color: #a7f3d0;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Cloudflare Worker API Test</h1>
+
+      <div class="card">
+        <label for="baseUrl">Worker Base URL</label>
+        <div>
+          <input id="baseUrl" type="text" value="https://senka-api.takahashi-masa.workers.dev" />
+          <button id="loadCourseBtn" type="button">/api/course を取得</button>
+        </div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="card">
+        <label for="nameInput">名前</label>
+        <div>
+          <input id="nameInput" type="text" value="山田" placeholder="例: 山田" />
+          <button id="helloBtn" type="button">/api/hello を取得</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>レスポンス</h2>
+        <pre id="responseOutput">{ "message": "まだ取得していません" }</pre>
+      </div>
+    </div>
+
+    <script>
+      const baseUrlInput = document.getElementById('baseUrl');
+      const responseOutput = document.getElementById('responseOutput');
+      const statusText = document.getElementById('status');
+      const nameInput = document.getElementById('nameInput');
+
+      const setStatus = (message) => {
+        statusText.textContent = message;
+      };
+
+      const fetchJson = async (url) => {
+        const response = await fetch(url, { method: 'GET' });
+        const text = await response.text();
+        let data;
+
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { raw: text };
+        }
+
+        return { response, data };
+      };
+
+      document.getElementById('loadCourseBtn').addEventListener('click', async () => {
+        const baseUrl = baseUrlInput.value.trim().replace(/\/$/, '');
+        const url = `${baseUrl}/api/course`;
+
+        setStatus('取得中...');
+
+        try {
+          const { response, data } = await fetchJson(url);
+          responseOutput.textContent = JSON.stringify({ status: response.status, data }, null, 2);
+          setStatus(response.ok ? '成功: /api/course を取得しました' : `失敗: ${response.status}`);
+        } catch (error) {
+          responseOutput.textContent = JSON.stringify({ error: error.message }, null, 2);
+          setStatus('エラー: 接続先を確認してください');
+        }
+      });
+
+      document.getElementById('helloBtn').addEventListener('click', async () => {
+        const baseUrl = baseUrlInput.value.trim().replace(/\/$/, '');
+        const name = encodeURIComponent(nameInput.value.trim());
+        const url = `${baseUrl}/api/hello?name=${name}`;
+
+        setStatus('取得中...');
+
+        try {
+          const { response, data } = await fetchJson(url);
+          responseOutput.textContent = JSON.stringify({ status: response.status, data }, null, 2);
+          setStatus(response.ok ? '成功: /api/hello を取得しました' : `失敗: ${response.status}`);
+        } catch (error) {
+          responseOutput.textContent = JSON.stringify({ error: error.message }, null, 2);
+          setStatus('エラー: 接続先を確認してください');
+        }
+      });
+    </script>
+  </body>
 </html>
